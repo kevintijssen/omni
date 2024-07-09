@@ -68,8 +68,9 @@ type Runtime struct {
 	resourceLogger          *resourcelogger.Logger
 
 	// resource state for internal consumers
-	state   state.State
-	virtual *virtual.State
+	state       state.State
+	cachedState state.State
+	virtual     *virtual.State
 
 	logger *zap.Logger
 }
@@ -87,37 +88,55 @@ func New(talosClientFactory *talos.ClientFactory, dnsService *dns.Service, workl
 	if !config.Config.DisableControllerRuntimeCache {
 		opts = append(opts,
 			safe.WithResourceCache[*omni.BackupData](),
+			safe.WithResourceCache[*omni.ConfigPatch](),
 			safe.WithResourceCache[*omni.Cluster](),
+			safe.WithResourceCache[*omni.ClusterBootstrapStatus](),
+			safe.WithResourceCache[*omni.ClusterConfigVersion](),
 			safe.WithResourceCache[*omni.ClusterDestroyStatus](),
 			safe.WithResourceCache[*omni.ClusterEndpoint](),
+			safe.WithResourceCache[*omni.ClusterKubernetesNodes](),
 			safe.WithResourceCache[*omni.ClusterMachine](),
+			safe.WithResourceCache[*omni.ClusterMachineConfig](),
+			safe.WithResourceCache[*omni.ClusterMachineConfigPatches](),
 			safe.WithResourceCache[*omni.ClusterMachineConfigStatus](),
+			safe.WithResourceCache[*omni.ClusterMachineEncryptionKey](),
 			safe.WithResourceCache[*omni.ClusterMachineIdentity](),
 			safe.WithResourceCache[*omni.ClusterMachineStatus](),
 			safe.WithResourceCache[*omni.ClusterMachineTalosVersion](),
 			safe.WithResourceCache[*omni.ClusterStatus](),
 			safe.WithResourceCache[*omni.ClusterSecrets](),
 			safe.WithResourceCache[*omni.ClusterUUID](),
+			safe.WithResourceCache[*omni.ClusterWorkloadProxyStatus](),
 			safe.WithResourceCache[*omni.ControlPlaneStatus](),
+			safe.WithResourceCache[*omni.EtcdAuditResult](),
 			safe.WithResourceCache[*omni.EtcdBackupEncryption](),
 			safe.WithResourceCache[*omni.EtcdBackupStatus](),
 			safe.WithResourceCache[*omni.ExposedService](),
+			safe.WithResourceCache[*omni.ExtensionsConfiguration](),
 			safe.WithResourceCache[*omni.ImagePullRequest](),
 			safe.WithResourceCache[*omni.ImagePullStatus](),
 			safe.WithResourceCache[*omni.Kubeconfig](),
+			safe.WithResourceCache[*omni.KubernetesNodeAuditResult](),
 			safe.WithResourceCache[*omni.KubernetesStatus](),
+			safe.WithResourceCache[*omni.KubernetesUpgradeManifestStatus](),
 			safe.WithResourceCache[*omni.KubernetesUpgradeStatus](),
 			safe.WithResourceCache[*omni.KubernetesVersion](),
 			safe.WithResourceCache[*omni.LoadBalancerConfig](),
 			safe.WithResourceCache[*omni.LoadBalancerStatus](),
 			safe.WithResourceCache[*omni.Machine](),
+			safe.WithResourceCache[*omni.MachineClass](),
 			safe.WithResourceCache[*omni.MachineConfigGenOptions](),
+			safe.WithResourceCache[*omni.MachineExtensions](),
+			safe.WithResourceCache[*omni.MachineExtensionsStatus](),
 			safe.WithResourceCache[*omni.MachineLabels](),
 			safe.WithResourceCache[*omni.MachineSet](),
+			safe.WithResourceCache[*omni.MachineSetDestroyStatus](),
 			safe.WithResourceCache[*omni.MachineSetStatus](),
 			safe.WithResourceCache[*omni.MachineSetNode](),
 			safe.WithResourceCache[*omni.MachineStatus](),
 			safe.WithResourceCache[*omni.MachineStatusSnapshot](),
+			safe.WithResourceCache[*omni.RedactedClusterMachineConfig](),
+			safe.WithResourceCache[*omni.Schematic](),
 			safe.WithResourceCache[*omni.SchematicConfiguration](),
 			safe.WithResourceCache[*omni.TalosConfig](),
 			safe.WithResourceCache[*omni.TalosExtensions](),
@@ -197,7 +216,7 @@ func New(talosClientFactory *talos.ClientFactory, dnsService *dns.Service, workl
 		omnictrl.NewClusterConfigVersionController(),
 		omnictrl.NewClusterEndpointController(),
 		omnictrl.NewClusterKubernetesNodesController(),
-		omnictrl.NewClusterMachineConfigController(config.Config.DefaultConfigGenOptions),
+		omnictrl.NewClusterMachineConfigController(config.Config.DefaultConfigGenOptions, config.Config.EventSinkPort),
 		omnictrl.NewClusterMachineTeardownController(defaultDiscoveryClient, embeddedDiscoveryClient),
 		omnictrl.NewMachineConfigGenOptionsController(),
 		omnictrl.NewMachineStatusController(imageFactoryClient),
@@ -218,7 +237,6 @@ func New(talosClientFactory *talos.ClientFactory, dnsService *dns.Service, workl
 		omnictrl.NewMachineExtensionsController(),
 		omnictrl.NewMachineSetStatusController(),
 		omnictrl.NewMachineSetEtcdAuditController(talosClientFactory, time.Minute),
-		omnictrl.NewMaintenanceConfigPatchController(config.Config.EventSinkPort),
 		omnictrl.NewRedactedClusterMachineConfigController(),
 		omnictrl.NewSchematicConfigurationController(imageFactoryClient),
 		omnictrl.NewSecretsController(storeFactory),
@@ -299,6 +317,7 @@ func New(talosClientFactory *talos.ClientFactory, dnsService *dns.Service, workl
 		workloadProxyReconciler: workloadProxyReconciler,
 		resourceLogger:          resourceLogger,
 		state:                   state.WrapCore(validated.NewState(resourceState, validationOptions...)),
+		cachedState:             state.WrapCore(validated.NewState(controllerRuntime.CachedState(), validationOptions...)),
 		virtual:                 virtualState,
 		logger:                  logger,
 	}, nil
@@ -386,7 +405,7 @@ func (r *Runtime) Get(ctx context.Context, setters ...runtime.QueryOption) (any,
 
 	metadata := cosiresource.NewMetadata(opts.Namespace, opts.Resource, opts.Name, cosiresource.VersionUndefined)
 
-	res, err := r.state.Get(ctx, metadata)
+	res, err := r.cachedState.Get(ctx, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +430,7 @@ func (r *Runtime) List(ctx context.Context, setters ...runtime.QueryOption) (run
 		}
 	}
 
-	list, err := r.state.List(
+	list, err := r.cachedState.List(
 		ctx,
 		cosiresource.NewMetadata(opts.Namespace, opts.Resource, "", cosiresource.VersionUndefined),
 		listOptions...,
@@ -485,6 +504,11 @@ func (r *Runtime) Delete(ctx context.Context, setters ...runtime.QueryOption) er
 // State returns runtime state.
 func (r *Runtime) State() state.State { //nolint:ireturn
 	return r.state
+}
+
+// CachedState returns runtime cached state.
+func (r *Runtime) CachedState() state.State { //nolint:ireturn
+	return r.cachedState
 }
 
 // GetCOSIRuntime returns COSI  controller runtime.
