@@ -34,6 +34,7 @@ import (
 	"github.com/siderolabs/omni/client/pkg/omni/resources/siderolink"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/helpers"
 	omnictrl "github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni"
+	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni/internal/machineset"
 )
 
 type MachineSetStatusSuite struct {
@@ -282,9 +283,27 @@ func (suite *MachineSetStatusSuite) TestScaleUp() {
 	suite.assertMachineSetPhase(machineSet, *specs.MachineSetPhase_Running.Enum())
 }
 
+// TestEmptyTeardown should destroy the machine sets without cluster machines.
+func (suite *MachineSetStatusSuite) TestEmptyTeardown() {
+	cluster := omni.NewCluster(resources.DefaultNamespace, "test")
+
+	ms := omni.NewMachineSet(resources.DefaultNamespace, "tearingdown")
+	ms.Metadata().SetPhase(resource.PhaseTearingDown)
+	ms.Metadata().Labels().Set(omni.LabelCluster, cluster.Metadata().ID())
+
+	msn := omni.NewMachineSetNode(resources.DefaultNamespace, "1", ms)
+	msn.Metadata().Finalizers().Add(machineset.ControllerName)
+
+	suite.Require().NoError(suite.state.Create(suite.ctx, msn))
+	suite.Require().NoError(suite.state.Create(suite.ctx, ms))
+
+	rtestutils.DestroyAll[*omni.MachineSetNode](suite.ctx, suite.T(), suite.state)
+	rtestutils.DestroyAll[*omni.MachineSet](suite.ctx, suite.T(), suite.state)
+}
+
 // TestScaleDown create a machine set with 3 machines
 // which are not running. Immediately try to scale down.
-// Scale down should be blocked until the machines become ready.
+// Scale down should remove the first machine.
 // Make all machines ready, check that machines count went to 2 and the machine set is ready.
 func (suite *MachineSetStatusSuite) TestScaleDown() {
 	clusterName := "scale-down"
@@ -304,7 +323,7 @@ func (suite *MachineSetStatusSuite) TestScaleDown() {
 
 	suite.assertMachineSetPhase(machineSet, specs.MachineSetPhase_ScalingUp)
 
-	expectedMachines := []string{"scaledown-1", "scaledown-2", "scaledown-3"}
+	expectedMachines := []string{"scaledown-2", "scaledown-3"}
 
 	suite.assertMachinesState(expectedMachines, clusterName, machineSet.Metadata().ID())
 
@@ -324,7 +343,7 @@ func (suite *MachineSetStatusSuite) TestScaleDown() {
 	suite.Require().NoError(err)
 
 	suite.Assert().NoError(retry.Constant(5*time.Second, retry.WithUnits(100*time.Millisecond)).Retry(
-		suite.assertNoResource(*omni.NewClusterMachine(resources.DefaultNamespace, expectedMachines[0]).Metadata()),
+		suite.assertNoResource(*omni.NewClusterMachine(resources.DefaultNamespace, machines[0]).Metadata()),
 	))
 
 	suite.assertMachineSetPhase(machineSet, specs.MachineSetPhase_Running)
