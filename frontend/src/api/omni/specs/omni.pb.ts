@@ -421,6 +421,7 @@ export type KubernetesVersionSpec = {
 export type TalosVersionSpec = {
   version?: string
   compatible_kubernetes_versions?: string[]
+  deprecated?: boolean
 }
 
 export type InstallationMediaSpec = {
@@ -485,6 +486,10 @@ export type MachineSetStatusSpec = {
   config_hash?: string
   machine_class?: MachineSetSpecMachineClass
   locked_updates?: number
+}
+
+export type MachineSetRequiredMachinesSpec = {
+  required_additional_machines?: number
 }
 
 export type MachineSetNodeSpec = {
@@ -590,6 +595,10 @@ export type EtcdBackupSettings = {
 
 export type MachineClassSpec = {
   match_labels?: string[]
+}
+
+export type MachineClassStatusSpec = {
+  required_additional_machines?: number
 }
 
 export type MachineConfigGenOptionsSpecInstallImage = {
@@ -699,6 +708,11 @@ export type MachineStatusMetricsSpec = {
   registered_machines_count?: number
   connected_machines_count?: number
   allocated_machines_count?: number
+}
+
+export type ClusterStatusMetricsSpec = {
+  not_ready_count?: number
+  phases?: {[key: number]: number}
 }
 
 export type ClusterKubernetesNodesSpec = {

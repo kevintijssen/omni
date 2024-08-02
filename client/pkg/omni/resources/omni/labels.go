@@ -53,6 +53,12 @@ const (
 	// LabelExposedServiceAlias is the alias of the exposed service.
 	// tsgen:LabelExposedServiceAlias
 	LabelExposedServiceAlias = SystemLabelPrefix + "exposed-service-alias"
+
+	// LabelCloudProviderID is the cloud provider ID for the resources managed by cloud providers, e.g., cloud.MachineRequest, cloud.MachineRequestStatus.
+	LabelCloudProviderID = SystemLabelPrefix + "cloud-provider-id"
+
+	// LabelMachineClassName is the name of the machine class.
+	LabelMachineClassName = SystemLabelPrefix + "machine-class-name"
 )
 
 const (

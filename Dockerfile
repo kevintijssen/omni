@@ -1,8 +1,8 @@
-# syntax = docker/dockerfile-upstream:1.8.1-labs
+# syntax = docker/dockerfile-upstream:1.9.0-labs
 
 # THIS FILE WAS AUTOMATICALLY GENERATED, PLEASE DO NOT EDIT.
 #
-# Generated on 2024-07-09T15:20:03Z by kres 8c8b007.
+# Generated on 2024-07-23T12:11:06Z by kres 6d3182c.
 
 ARG JS_TOOLCHAIN
 ARG TOOLCHAIN
@@ -20,7 +20,7 @@ ENV GOPATH=/go
 ENV PATH=${PATH}:/usr/local/go/bin
 
 # runs markdownlint
-FROM docker.io/oven/bun:1.1.17-alpine AS lint-markdown
+FROM docker.io/oven/bun:1.1.20-alpine AS lint-markdown
 WORKDIR /src
 RUN bun i markdownlint-cli@0.41.0 sentences-per-line@0.2.1
 COPY .markdownlint.json .
@@ -38,6 +38,7 @@ ADD client/api/omni/resources/resources.proto /client/api/omni/resources/
 ADD client/api/omni/management/management.proto /client/api/omni/management/
 ADD client/api/omni/oidc/oidc.proto /client/api/omni/oidc/
 ADD client/api/omni/specs/auth.proto /client/api/omni/specs/
+ADD client/api/omni/specs/cloud/cloud.proto /client/api/omni/specs/cloud/
 ADD client/api/omni/specs/virtual.proto /client/api/omni/specs/
 ADD client/api/omni/specs/ephemeral.proto /client/api/omni/specs/
 ADD client/api/omni/specs/oidc.proto /client/api/omni/specs/
@@ -60,6 +61,7 @@ ADD client/api/omni/specs/omni.proto /frontend/src/api/omni/specs/
 ADD client/api/omni/specs/siderolink.proto /frontend/src/api/omni/specs/
 ADD client/api/omni/specs/system.proto /frontend/src/api/omni/specs/
 ADD client/api/omni/specs/auth.proto /frontend/src/api/omni/specs/
+ADD client/api/omni/specs/cloud/cloud.proto /frontend/src/api/omni/specs/cloud/
 ADD client/api/omni/specs/virtual.proto /frontend/src/api/omni/specs/
 ADD client/api/omni/specs/ephemeral.proto /frontend/src/api/omni/specs/
 ADD https://raw.githubusercontent.com/googleapis/googleapis/master/google/rpc/status.proto /frontend/src/api/google/rpc/
@@ -154,6 +156,7 @@ RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/s
 RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/omni/specs/siderolink.proto
 RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/omni/specs/system.proto
 RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/omni/specs/auth.proto
+RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/omni/specs/cloud/cloud.proto
 RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/omni/specs/virtual.proto
 RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/omni/specs/ephemeral.proto
 RUN protoc -I/frontend/src/api --grpc-gateway-ts_out=source_relative:/frontend/src/api --grpc-gateway-ts_opt=use_proto_names=true /frontend/src/api/google/rpc/status.proto
@@ -173,6 +176,7 @@ RUN rm /frontend/src/api/omni/specs/omni.proto
 RUN rm /frontend/src/api/omni/specs/siderolink.proto
 RUN rm /frontend/src/api/omni/specs/system.proto
 RUN rm /frontend/src/api/omni/specs/auth.proto
+RUN rm /frontend/src/api/omni/specs/cloud/cloud.proto
 RUN rm /frontend/src/api/omni/specs/virtual.proto
 RUN rm /frontend/src/api/omni/specs/ephemeral.proto
 
@@ -193,13 +197,14 @@ RUN mkdir -p internal/version/data && \
 FROM tools AS proto-compile
 COPY --from=proto-specs / /
 RUN protoc -I/client/api --go_out=paths=source_relative:/client/api --go-grpc_out=paths=source_relative:/client/api --go-vtproto_out=paths=source_relative:/client/api --go-vtproto_opt=features=marshal+unmarshal+size+equal+clone /client/api/common/omni.proto
-RUN protoc -I/client/api --grpc-gateway_out=paths=source_relative:/client/api --grpc-gateway_opt=generate_unbound_methods=true --go_out=paths=source_relative:/client/api --go-grpc_out=paths=source_relative:/client/api --go-vtproto_out=paths=source_relative:/client/api --go-vtproto_opt=features=marshal+unmarshal+size+equal+clone /client/api/omni/resources/resources.proto /client/api/omni/management/management.proto /client/api/omni/oidc/oidc.proto /client/api/omni/specs/auth.proto /client/api/omni/specs/virtual.proto /client/api/omni/specs/ephemeral.proto /client/api/omni/specs/oidc.proto /client/api/omni/specs/omni.proto /client/api/omni/specs/siderolink.proto /client/api/omni/specs/system.proto
+RUN protoc -I/client/api --grpc-gateway_out=paths=source_relative:/client/api --grpc-gateway_opt=generate_unbound_methods=true --go_out=paths=source_relative:/client/api --go-grpc_out=paths=source_relative:/client/api --go-vtproto_out=paths=source_relative:/client/api --go-vtproto_opt=features=marshal+unmarshal+size+equal+clone /client/api/omni/resources/resources.proto /client/api/omni/management/management.proto /client/api/omni/oidc/oidc.proto /client/api/omni/specs/auth.proto /client/api/omni/specs/cloud/cloud.proto /client/api/omni/specs/virtual.proto /client/api/omni/specs/ephemeral.proto /client/api/omni/specs/oidc.proto /client/api/omni/specs/omni.proto /client/api/omni/specs/siderolink.proto /client/api/omni/specs/system.proto
 RUN protoc -I/client/api --grpc-gateway_out=paths=source_relative:/client/api --grpc-gateway_opt=generate_unbound_methods=true --grpc-gateway_opt=standalone=true /client/api/google/rpc/status.proto /client/api/common/common.proto /client/api/talos/machine/machine.proto /client/api/v1alpha1/resource.proto
 RUN rm /client/api/common/omni.proto
 RUN rm /client/api/omni/resources/resources.proto
 RUN rm /client/api/omni/management/management.proto
 RUN rm /client/api/omni/oidc/oidc.proto
 RUN rm /client/api/omni/specs/auth.proto
+RUN rm /client/api/omni/specs/cloud/cloud.proto
 RUN rm /client/api/omni/specs/virtual.proto
 RUN rm /client/api/omni/specs/ephemeral.proto
 RUN rm /client/api/omni/specs/oidc.proto

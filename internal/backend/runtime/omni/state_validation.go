@@ -38,7 +38,7 @@ import (
 //
 //nolint:gocognit,gocyclo,cyclop
 func clusterValidationOptions(st state.State, etcdBackupConfig config.EtcdBackupParams, embeddedDiscoveryServiceConfig config.EmbeddedDiscoveryServiceParams) []validated.StateOption {
-	validateVersions := func(ctx context.Context, res *omni.Cluster, skipTalosVersion, skipKubernetesVersion bool) error {
+	validateVersions := func(ctx context.Context, existingRes *omni.Cluster, res *omni.Cluster, skipTalosVersion, skipKubernetesVersion bool) error {
 		if skipTalosVersion && skipKubernetesVersion {
 			return nil
 		}
@@ -50,6 +50,27 @@ func clusterValidationOptions(st state.State, etcdBackupConfig config.EtcdBackup
 			}
 
 			return fmt.Errorf("invalid talos version %q: %w", res.TypedSpec().Value.TalosVersion, err)
+		}
+
+		currentVersionIsDeprecated := false
+
+		if existingRes != nil {
+			var ver *omni.TalosVersion
+
+			ver, err = safe.StateGet[*omni.TalosVersion](ctx, st, omni.NewTalosVersion(resources.DefaultNamespace, existingRes.TypedSpec().Value.TalosVersion).Metadata())
+			if err != nil && !state.IsNotFoundError(err) {
+				return err
+			}
+
+			if ver != nil {
+				currentVersionIsDeprecated = ver.TypedSpec().Value.Deprecated
+			}
+		}
+
+		// disallow updating to the deprecated Talos version from the non-deprecated one
+		// 1.3.0 -> 1.3.7 should still work for example
+		if talosVersion.TypedSpec().Value.Deprecated && !currentVersionIsDeprecated {
+			return fmt.Errorf("talos version %q is no longer supported", res.TypedSpec().Value.TalosVersion)
 		}
 
 		if skipKubernetesVersion {
@@ -141,7 +162,7 @@ func clusterValidationOptions(st state.State, etcdBackupConfig config.EtcdBackup
 				multiErr = multierror.Append(multiErr, err)
 			}
 
-			if err := validateVersions(ctx, res, false, false); err != nil {
+			if err := validateVersions(ctx, nil, res, false, false); err != nil {
 				multiErr = multierror.Append(multiErr, err)
 			}
 
@@ -170,7 +191,7 @@ func clusterValidationOptions(st state.State, etcdBackupConfig config.EtcdBackup
 				multiErr = multierror.Append(multiErr, err)
 			}
 
-			if err := validateVersions(ctx, newRes, skipTalosVersion, skipKubernetesVersion); err != nil {
+			if err := validateVersions(ctx, existingRes, newRes, skipTalosVersion, skipKubernetesVersion); err != nil {
 				multiErr = multierror.Append(multiErr, err)
 			}
 
@@ -382,6 +403,32 @@ func machineSetValidationOptions(st state.State, etcdBackupStoreFactory store.Fa
 		})),
 		validated.WithUpdateValidations(validated.NewUpdateValidationForType(func(ctx context.Context, oldRes *omni.MachineSet, newRes *omni.MachineSet, _ ...state.UpdateOption) error {
 			return validate(ctx, oldRes, newRes)
+		})),
+	}
+}
+
+// machineClassValidationOptions returns the validation options for the machine class resource.
+func machineClassValidationOptions(st state.State) []validated.StateOption {
+	return []validated.StateOption{
+		validated.WithDestroyValidations(validated.NewDestroyValidationForType(func(ctx context.Context, _ resource.Pointer, res *omni.MachineClass, _ ...state.DestroyOption) error {
+			machineSets, err := safe.ReaderListAll[*omni.MachineSet](ctx, st)
+			if err != nil {
+				return err
+			}
+
+			var inUseBy []string
+
+			machineSets.ForEach(func(r *omni.MachineSet) {
+				if r.TypedSpec().Value.MachineClass != nil && r.TypedSpec().Value.MachineClass.Name == res.Metadata().ID() {
+					inUseBy = append(inUseBy, r.Metadata().ID())
+				}
+			})
+
+			if len(inUseBy) > 0 {
+				return fmt.Errorf("can not delete the machine class as it is still in use by machine sets: %s", strings.Join(inUseBy, ", "))
+			}
+
+			return nil
 		})),
 	}
 }

@@ -992,6 +992,7 @@ func (m *TalosVersionSpec) CloneVT() *TalosVersionSpec {
 	}
 	r := new(TalosVersionSpec)
 	r.Version = m.Version
+	r.Deprecated = m.Deprecated
 	if rhs := m.CompatibleKubernetesVersions; rhs != nil {
 		tmpContainer := make([]string, len(rhs))
 		copy(tmpContainer, rhs)
@@ -1190,6 +1191,23 @@ func (m *MachineSetStatusSpec) CloneVT() *MachineSetStatusSpec {
 }
 
 func (m *MachineSetStatusSpec) CloneMessageVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *MachineSetRequiredMachinesSpec) CloneVT() *MachineSetRequiredMachinesSpec {
+	if m == nil {
+		return (*MachineSetRequiredMachinesSpec)(nil)
+	}
+	r := new(MachineSetRequiredMachinesSpec)
+	r.RequiredAdditionalMachines = m.RequiredAdditionalMachines
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *MachineSetRequiredMachinesSpec) CloneMessageVT() proto.Message {
 	return m.CloneVT()
 }
 
@@ -1634,6 +1652,23 @@ func (m *MachineClassSpec) CloneMessageVT() proto.Message {
 	return m.CloneVT()
 }
 
+func (m *MachineClassStatusSpec) CloneVT() *MachineClassStatusSpec {
+	if m == nil {
+		return (*MachineClassStatusSpec)(nil)
+	}
+	r := new(MachineClassStatusSpec)
+	r.RequiredAdditionalMachines = m.RequiredAdditionalMachines
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *MachineClassStatusSpec) CloneMessageVT() proto.Message {
+	return m.CloneVT()
+}
+
 func (m *MachineConfigGenOptionsSpec_InstallImage) CloneVT() *MachineConfigGenOptionsSpec_InstallImage {
 	if m == nil {
 		return (*MachineConfigGenOptionsSpec_InstallImage)(nil)
@@ -2042,6 +2077,30 @@ func (m *MachineStatusMetricsSpec) CloneVT() *MachineStatusMetricsSpec {
 }
 
 func (m *MachineStatusMetricsSpec) CloneMessageVT() proto.Message {
+	return m.CloneVT()
+}
+
+func (m *ClusterStatusMetricsSpec) CloneVT() *ClusterStatusMetricsSpec {
+	if m == nil {
+		return (*ClusterStatusMetricsSpec)(nil)
+	}
+	r := new(ClusterStatusMetricsSpec)
+	r.NotReadyCount = m.NotReadyCount
+	if rhs := m.Phases; rhs != nil {
+		tmpContainer := make(map[int32]uint32, len(rhs))
+		for k, v := range rhs {
+			tmpContainer[k] = v
+		}
+		r.Phases = tmpContainer
+	}
+	if len(m.unknownFields) > 0 {
+		r.unknownFields = make([]byte, len(m.unknownFields))
+		copy(r.unknownFields, m.unknownFields)
+	}
+	return r
+}
+
+func (m *ClusterStatusMetricsSpec) CloneMessageVT() proto.Message {
 	return m.CloneVT()
 }
 
@@ -3423,6 +3482,9 @@ func (this *TalosVersionSpec) EqualVT(that *TalosVersionSpec) bool {
 			return false
 		}
 	}
+	if this.Deprecated != that.Deprecated {
+		return false
+	}
 	return string(this.unknownFields) == string(that.unknownFields)
 }
 
@@ -3689,6 +3751,25 @@ func (this *MachineSetStatusSpec) EqualVT(that *MachineSetStatusSpec) bool {
 
 func (this *MachineSetStatusSpec) EqualMessageVT(thatMsg proto.Message) bool {
 	that, ok := thatMsg.(*MachineSetStatusSpec)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+func (this *MachineSetRequiredMachinesSpec) EqualVT(that *MachineSetRequiredMachinesSpec) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.RequiredAdditionalMachines != that.RequiredAdditionalMachines {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *MachineSetRequiredMachinesSpec) EqualMessageVT(thatMsg proto.Message) bool {
+	that, ok := thatMsg.(*MachineSetRequiredMachinesSpec)
 	if !ok {
 		return false
 	}
@@ -4304,6 +4385,25 @@ func (this *MachineClassSpec) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
+func (this *MachineClassStatusSpec) EqualVT(that *MachineClassStatusSpec) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.RequiredAdditionalMachines != that.RequiredAdditionalMachines {
+		return false
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *MachineClassStatusSpec) EqualMessageVT(thatMsg proto.Message) bool {
+	that, ok := thatMsg.(*MachineClassStatusSpec)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
 func (this *MachineConfigGenOptionsSpec_InstallImage) EqualVT(that *MachineConfigGenOptionsSpec_InstallImage) bool {
 	if this == that {
 		return true
@@ -4838,6 +4938,37 @@ func (this *MachineStatusMetricsSpec) EqualVT(that *MachineStatusMetricsSpec) bo
 
 func (this *MachineStatusMetricsSpec) EqualMessageVT(thatMsg proto.Message) bool {
 	that, ok := thatMsg.(*MachineStatusMetricsSpec)
+	if !ok {
+		return false
+	}
+	return this.EqualVT(that)
+}
+func (this *ClusterStatusMetricsSpec) EqualVT(that *ClusterStatusMetricsSpec) bool {
+	if this == that {
+		return true
+	} else if this == nil || that == nil {
+		return false
+	}
+	if this.NotReadyCount != that.NotReadyCount {
+		return false
+	}
+	if len(this.Phases) != len(that.Phases) {
+		return false
+	}
+	for i, vx := range this.Phases {
+		vy, ok := that.Phases[i]
+		if !ok {
+			return false
+		}
+		if vx != vy {
+			return false
+		}
+	}
+	return string(this.unknownFields) == string(that.unknownFields)
+}
+
+func (this *ClusterStatusMetricsSpec) EqualMessageVT(thatMsg proto.Message) bool {
+	that, ok := thatMsg.(*ClusterStatusMetricsSpec)
 	if !ok {
 		return false
 	}
@@ -7661,6 +7792,16 @@ func (m *TalosVersionSpec) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 		i -= len(m.unknownFields)
 		copy(dAtA[i:], m.unknownFields)
 	}
+	if m.Deprecated {
+		i--
+		if m.Deprecated {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.CompatibleKubernetesVersions) > 0 {
 		for iNdEx := len(m.CompatibleKubernetesVersions) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.CompatibleKubernetesVersions[iNdEx])
@@ -8243,6 +8384,44 @@ func (m *MachineSetStatusSpec) MarshalToSizedBufferVT(dAtA []byte) (int, error) 
 	}
 	if m.Phase != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.Phase))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MachineSetRequiredMachinesSpec) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MachineSetRequiredMachinesSpec) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *MachineSetRequiredMachinesSpec) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i -= len(m.unknownFields)
+		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.RequiredAdditionalMachines != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.RequiredAdditionalMachines))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -9313,6 +9492,44 @@ func (m *MachineClassSpec) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MachineClassStatusSpec) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MachineClassStatusSpec) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *MachineClassStatusSpec) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i -= len(m.unknownFields)
+		copy(dAtA[i:], m.unknownFields)
+	}
+	if m.RequiredAdditionalMachines != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.RequiredAdditionalMachines))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *MachineConfigGenOptionsSpec_InstallImage) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -10352,6 +10569,59 @@ func (m *MachineStatusMetricsSpec) MarshalToSizedBufferVT(dAtA []byte) (int, err
 	}
 	if m.RegisteredMachinesCount != 0 {
 		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.RegisteredMachinesCount))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ClusterStatusMetricsSpec) MarshalVT() (dAtA []byte, err error) {
+	if m == nil {
+		return nil, nil
+	}
+	size := m.SizeVT()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBufferVT(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ClusterStatusMetricsSpec) MarshalToVT(dAtA []byte) (int, error) {
+	size := m.SizeVT()
+	return m.MarshalToSizedBufferVT(dAtA[:size])
+}
+
+func (m *ClusterStatusMetricsSpec) MarshalToSizedBufferVT(dAtA []byte) (int, error) {
+	if m == nil {
+		return 0, nil
+	}
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.unknownFields != nil {
+		i -= len(m.unknownFields)
+		copy(dAtA[i:], m.unknownFields)
+	}
+	if len(m.Phases) > 0 {
+		for k := range m.Phases {
+			v := m.Phases[k]
+			baseI := i
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(k))
+			i--
+			dAtA[i] = 0x8
+			i = protohelpers.EncodeVarint(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.NotReadyCount != 0 {
+		i = protohelpers.EncodeVarint(dAtA, i, uint64(m.NotReadyCount))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -11528,6 +11798,9 @@ func (m *TalosVersionSpec) SizeVT() (n int) {
 			n += 1 + l + protohelpers.SizeOfVarint(uint64(l))
 		}
 	}
+	if m.Deprecated {
+		n += 2
+	}
 	n += len(m.unknownFields)
 	return n
 }
@@ -11757,6 +12030,19 @@ func (m *MachineSetStatusSpec) SizeVT() (n int) {
 	}
 	if m.LockedUpdates != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.LockedUpdates))
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *MachineSetRequiredMachinesSpec) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RequiredAdditionalMachines != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.RequiredAdditionalMachines))
 	}
 	n += len(m.unknownFields)
 	return n
@@ -12174,6 +12460,19 @@ func (m *MachineClassSpec) SizeVT() (n int) {
 	return n
 }
 
+func (m *MachineClassStatusSpec) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RequiredAdditionalMachines != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.RequiredAdditionalMachines))
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
 func (m *MachineConfigGenOptionsSpec_InstallImage) SizeVT() (n int) {
 	if m == nil {
 		return 0
@@ -12567,6 +12866,27 @@ func (m *MachineStatusMetricsSpec) SizeVT() (n int) {
 	}
 	if m.AllocatedMachinesCount != 0 {
 		n += 1 + protohelpers.SizeOfVarint(uint64(m.AllocatedMachinesCount))
+	}
+	n += len(m.unknownFields)
+	return n
+}
+
+func (m *ClusterStatusMetricsSpec) SizeVT() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.NotReadyCount != 0 {
+		n += 1 + protohelpers.SizeOfVarint(uint64(m.NotReadyCount))
+	}
+	if len(m.Phases) > 0 {
+		for k, v := range m.Phases {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + protohelpers.SizeOfVarint(uint64(k)) + 1 + protohelpers.SizeOfVarint(uint64(v))
+			n += mapEntrySize + 1 + protohelpers.SizeOfVarint(uint64(mapEntrySize))
+		}
 	}
 	n += len(m.unknownFields)
 	return n
@@ -19710,6 +20030,26 @@ func (m *TalosVersionSpec) UnmarshalVT(dAtA []byte) error {
 			}
 			m.CompatibleKubernetesVersions = append(m.CompatibleKubernetesVersions, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Deprecated", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Deprecated = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -21249,6 +21589,76 @@ func (m *MachineSetStatusSpec) UnmarshalVT(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.LockedUpdates |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MachineSetRequiredMachinesSpec) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return protohelpers.ErrIntOverflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MachineSetRequiredMachinesSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MachineSetRequiredMachinesSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequiredAdditionalMachines", wireType)
+			}
+			m.RequiredAdditionalMachines = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RequiredAdditionalMachines |= uint32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -23607,6 +24017,76 @@ func (m *MachineClassSpec) UnmarshalVT(dAtA []byte) error {
 			}
 			m.MatchLabels = append(m.MatchLabels, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MachineClassStatusSpec) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return protohelpers.ErrIntOverflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MachineClassStatusSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MachineClassStatusSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequiredAdditionalMachines", wireType)
+			}
+			m.RequiredAdditionalMachines = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RequiredAdditionalMachines |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
@@ -26055,6 +26535,175 @@ func (m *MachineStatusMetricsSpec) UnmarshalVT(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.unknownFields = append(m.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ClusterStatusMetricsSpec) UnmarshalVT(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return protohelpers.ErrIntOverflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ClusterStatusMetricsSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ClusterStatusMetricsSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NotReadyCount", wireType)
+			}
+			m.NotReadyCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.NotReadyCount |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Phases", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protohelpers.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return protohelpers.ErrInvalidLength
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Phases == nil {
+				m.Phases = make(map[int32]uint32)
+			}
+			var mapkey int32
+			var mapvalue uint32
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protohelpers.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protohelpers.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapkey |= int32(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+				} else if fieldNum == 2 {
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protohelpers.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapvalue |= uint32(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := protohelpers.Skip(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return protohelpers.ErrInvalidLength
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.Phases[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := protohelpers.Skip(dAtA[iNdEx:])
